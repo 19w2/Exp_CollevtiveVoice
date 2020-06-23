@@ -1,0 +1,128 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title></title>
+
+<style>
+    body {
+	font-family: "MS PGothic",sans-serif;
+	font-size: 12pt;
+    }
+</style>
+
+<script type="text/javascript"> 
+//<![CDATA[
+
+//------------------------------
+// ロード
+//------------------------------
+function load() {
+    //クッキーが設定されていなかったら中断
+    if (!checkCookie()) {
+	var msg = "ブラウザのcookieがオフになっています．<br>";
+	msg += "cookieをオンにしてください．";
+	document.getElementById("messages").innerHTML = msg;
+	return false;
+    }
+
+    //実験条件のクッキー書き込み
+    writeCookie("gid", 0, 60);
+
+    //開始時刻のクッキー書き込み
+    var cDate = new Date();
+    var tYear = cDate.getFullYear();
+    var tMonth = nf(cDate.getMonth()+1, 2);
+    var tDate = nf(cDate.getDate(), 2);
+    var tHour = nf(cDate.getHours(), 2);
+    var tMin = nf(cDate.getMinutes(), 2);
+    var tSec = nf(cDate.getSeconds(), 2);
+    var startDate = tYear + "-" + tMonth + "-" + tDate + "_" +
+        tHour + "-" + tMin + "-" + tSec;
+    writeCookie("startDate", startDate, 60);
+
+    var msg = "仮のクッキー情報をセットしました．<br><br>";
+    msg += "<a href=\"./questionnaire.html\">アンケートページへ</a>";
+    document.getElementById("messages").innerHTML = msg;
+    //alert(document.cookie);
+}
+
+//------------------------------
+// 0で桁をそろえる
+//------------------------------
+function nf(num, digit) {
+    var base = String(num + Math.pow(10, digit));
+    var formated = base.substr(base.length-digit, digit);
+    return formated;
+}
+
+// ------------------------------
+// テキストの選択禁止
+// ------------------------------
+function setNoSelect() {
+    document.onselectstart = function() {return false;};
+}    
+
+// -------------------------------------
+// クッキーオンオフチェック
+// -------------------------------------
+function checkCookie() {
+    var key = "test";
+    writeCookie(key, 1, 1);
+    if (readCookie(key) == "") {
+	return false;
+    } else {
+	clearCookie(key);
+	return true;
+    }
+}
+
+// -------------------------------------
+// クッキー書き込み
+// -------------------------------------
+function writeCookie(key, value, days) {
+    var d = new Date();
+    d.setDate(d.getDate() + days);
+    document.cookie = key + "=" + escape(value) + ";" + 
+	"expires=" + d.toGMTString() + ";";
+}
+
+// -------------------------------------
+// クッキー読み込み
+// -------------------------------------
+function readCookie(key) {
+    if (key == "") {retrun;}
+    
+    var rexp = new RegExp(key + "=(.*?)(?:;|$)");
+    if (document.cookie.match(rexp)) {
+	return unescape(RegExp.$1);
+    } else {
+	return "";
+    }
+}
+
+// -------------------------------------
+// クッキー消去
+// -------------------------------------
+function clearCookie(key) {
+    var d = new Date();
+    d.setDate(d.getDate() -1);
+    document.cookie = key + "=false" +  ";" + 
+	"expires=" + d.toGMTString() + ";";
+}
+
+//]]>
+</script>
+
+</head>
+    
+    <body onload="load()" style="background-color:#FFFFFF;color:#000000;">
+
+    <div style="margin:0 auto; width:800px;">
+
+    <div id="messages"></div>
+    
+    <div id="footer">
+    </div>
+</body>
+</html>

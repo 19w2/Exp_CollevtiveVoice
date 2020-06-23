@@ -1,0 +1,48 @@
+(function() {
+    //pixi 4.5.3
+
+    //コンテナの作成(これが描画のベースになる）
+    var stage = new PIXI.Container();
+
+    //レンダラーの生成
+    var renderer = PIXI.autoDetectRenderer(640, 480, {
+        antialias: true,     // アンチエイリアスをON
+        backgroundColor: 0x000000 // 背景色
+        //  transparent:      true,     // 背景を透過にしたい場合
+    });
+
+    // DOMにviewｗ追加
+    document.getElementById("stage").appendChild(renderer.view);
+
+    //画像のロードをsetup関数の呼び出し
+    PIXI.loader
+        .add("images/cat.png")
+        .load(setup);
+
+    //複数の関数で使う変数
+    var cat;
+
+    //セットアップ関数
+    function setup() {
+        cat = new PIXI.Sprite(PIXI.loader.resources["images/cat.png"].texture);
+        cat.x = 0;
+        cat.y = 96;
+        stage.addChild(cat);
+
+        //アニメーションの開始
+        gameLoop();
+    } 
+
+    //アニメーション関数の定義
+    function gameLoop() {
+        // 60 FPSで描画
+        requestAnimationFrame(gameLoop);
+
+        cat.x += 1;
+
+        // 描画
+        renderer.render(stage);
+    };
+
+}());
+

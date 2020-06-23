@@ -1,0 +1,111 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title></title>
+
+<style>
+    body {
+	font-family: "MS PGothic",sans-serif;
+	font-size: 12pt;
+    }
+</style>
+
+<script type="text/javascript"> 
+//<![CDATA[
+
+//------------------------------
+// ロード
+//------------------------------
+function load() {
+    //クッキーが設定されていなかったら中断
+    if (!checkCookie()) {
+        //var msg = "ブラウザのcookieがオフになっています．<br>";
+        //msg += "cookieをオンにしてください．";
+        var msg = "Please enable cookies.<br>";
+        document.getElementById("messages").innerHTML = msg;
+        return false;
+    }
+
+    clearCookie("gid");
+    clearCookie("startDate");
+    clearCookie("status");
+    
+    //var msg = "クッキー情報をリセットしました．<br><br>";
+    //msg += "<a href=\"./index.html\">実験ページへ</a>";
+    var msg = "Cookies are reset.<br><br>";
+    msg += "<a href=\"./index.html\">Go to the experiment page.</a>";
+    document.getElementById("messages").innerHTML = msg;
+    //alert(document.cookie);
+}
+
+// ------------------------------
+// テキストの選択禁止
+// ------------------------------
+function setNoSelect() {
+    document.onselectstart = function() {return false;};
+}    
+
+// -------------------------------------
+// クッキーオンオフチェック
+// -------------------------------------
+function checkCookie() {
+    var key = "test";
+    writeCookie(key, 1, 1);
+    if (readCookie(key) == "") {
+	return false;
+    } else {
+	clearCookie(key);
+	return true;
+    }
+}
+
+// -------------------------------------
+// クッキー書き込み
+// -------------------------------------
+function writeCookie(key, value, days) {
+    var d = new Date();
+    d.setDate(d.getDate() + days);
+    document.cookie = key + "=" + escape(value) + ";" + 
+	"expires=" + d.toGMTString() + ";";
+}
+
+// -------------------------------------
+// クッキー読み込み
+// -------------------------------------
+function readCookie(key) {
+    if (key == "") {retrun;}
+    
+    var rexp = new RegExp(key + "=(.*?)(?:;|$)");
+    if (document.cookie.match(rexp)) {
+	return unescape(RegExp.$1);
+    } else {
+	return "";
+    }
+}
+
+// -------------------------------------
+// クッキー消去
+// -------------------------------------
+function clearCookie(key) {
+    var d = new Date();
+    d.setDate(d.getDate() -1);
+    document.cookie = key + "=false" +  ";" + 
+	"expires=" + d.toGMTString() + ";";
+}
+
+//]]>
+</script>
+
+</head>
+    
+    <body onload="load()" style="background-color:#FFFFFF;color:#000000;">
+
+    <div style="margin:0 auto; width:800px;">
+
+    <div id="messages"></div>
+    
+    <div id="footer">
+    </div>
+</body>
+</html>

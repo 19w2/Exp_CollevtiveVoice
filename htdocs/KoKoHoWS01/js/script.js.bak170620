@@ -1,0 +1,368 @@
+(function() {
+    //pixi 4.5.3
+
+    //アプリの状態
+    var appStatus = "IDLE"
+        clickStatus = "NOT_CLICKED",
+        navStatus = "NOT_NAVIGATED",
+        navCounter = 0;
+
+    //アプリの作成(これが描画のベースになる）
+    var app = new PIXI.Application(800, 600, {
+        antialias: true,     // アンチエイリアスをON
+        backgroundColor: 0xcffcfc // 背景色
+        //  transparent:      true,     // 背景を透過にしたい場合
+    });
+
+    app.stop();
+
+    // DOMにview追加
+    document.getElementById("stage").appendChild(app.view);
+
+    //画像からスプライトを作成
+    var mountain = PIXI.Sprite.fromImage('images/mountain.png'),
+        road = PIXI.Sprite.fromImage('images/road.png'),
+        rockL = [],
+        rockR = [],
+        bank = [],
+        pillar = PIXI.Sprite.fromImage('images/pillar.png'),
+        mirror = PIXI.Sprite.fromImage('images/mirror.png'),
+        dashboard = PIXI.Sprite.fromImage('images/dashboard.png'),
+        handle = PIXI.Sprite.fromImage('images/handle.png'),
+        startBtn = PIXI.Sprite.fromImage('images/startButton.png'),
+        voiceMark = PIXI.Sprite.fromImage('images/voiceMark.png'),
+        pickel = PIXI.Sprite.fromImage('images/pickel.png');
+    
+    rockL[0] = PIXI.Sprite.fromImage('images/rockL01.png');
+    rockL[1] = PIXI.Sprite.fromImage('images/rockL02.png');
+    rockL[2] = PIXI.Sprite.fromImage('images/rockL03.png');
+    rockR[0] = PIXI.Sprite.fromImage('images/rockR02.png');
+    rockR[1] = PIXI.Sprite.fromImage('images/rockR03.png');
+    rockR[2] = PIXI.Sprite.fromImage('images/rockR01.png');
+
+    bank[0] = PIXI.Sprite.fromImage('images/bank.png');
+    bank[1] = PIXI.Sprite.fromImage('images/bank.png');
+    bank[2] = PIXI.Sprite.fromImage('images/bank.png');
+
+    //テクスチャのロード(アニメーション用)
+    var cloudsImg = PIXI.Texture.fromImage('images/clouds.png'),
+        roadEdgeLimg = [],
+        roadEdgeRimg = [];
+
+    roadEdgeLimg[0] = PIXI.Texture.fromImage('images/roadEdgeL01.png');
+    roadEdgeLimg[1] = PIXI.Texture.fromImage('images/roadEdgeL02.png');
+    roadEdgeRimg[0] = PIXI.Texture.fromImage('images/roadEdgeR01.png');
+    roadEdgeRimg[1] = PIXI.Texture.fromImage('images/roadEdgeR02.png');
+
+    //テクスチャからスプライトの生成
+    var cloudTile = new PIXI.extras.TilingSprite(
+            cloudsImg, app.renderer.width, 93),
+        roadEdgeL = new PIXI.extras.AnimatedSprite(roadEdgeLimg),
+        roadEdgeR = new PIXI.extras.AnimatedSprite(roadEdgeRimg);
+
+
+    //初期位置の設定
+    setupSprite();
+
+    //スプライトをステージに追加
+    app.stage.addChild(cloudTile);
+    app.stage.addChild(mountain);
+    app.stage.addChild(road);
+    app.stage.addChild(roadEdgeL);
+    app.stage.addChild(roadEdgeR);
+    app.stage.addChild(rockL[2]);
+    app.stage.addChild(rockL[1]);
+    app.stage.addChild(rockL[0]);
+    app.stage.addChild(rockR[2]);
+    app.stage.addChild(rockR[1]);
+    app.stage.addChild(rockR[0]);
+    app.stage.addChild(bank[1]);
+    app.stage.addChild(bank[0]);
+    app.stage.addChild(bank[2]);
+    app.stage.addChild(pickel);
+    app.stage.addChild(pillar);
+    app.stage.addChild(mirror);
+    app.stage.addChild(dashboard);
+    app.stage.addChild(voiceMark);
+    app.stage.addChild(handle);
+    app.stage.addChild(startBtn);
+
+
+    // ----------------------------------------------
+    //状態の更新(デフォルトでspee=1; 60 fps)
+    // ----------------------------------------------
+    //状態の更新(デフォルトでspee=1; 60 fps)
+    app.ticker.speed = 0.5; //30fps
+    app.ticker.add(function() {
+        var mousePos = app.renderer.plugins.interaction.mouse.global;
+        updatePickel(mousePos);
+        updateCloud();
+        updateStatus();
+
+        if (appStatus === "IDLE") {
+
+        } else if (appStatus === "NAVIGATION") {
+            updateNavigation();
+        } else if (appStatus === "GO") {
+            updateRock();
+            updateBank();
+        } 
+    });
+
+    //パーツの初期位置設定
+    function setupSprite() {
+        cloudTile.y = 20;
+
+        mountain.x = 0;
+        mountain.y = 45;
+
+        road.x = 0;
+        road.y = 130;
+
+        for(var i=0; i<3; i+=1) {
+            rockL[i].x = 10 + i*60*1.2;
+            rockL[i].y = 400 - i*60*1.5;
+            rockL[i].scale.x *= 0.993**(i*60);
+            rockL[i].scale.y *= 0.993**(i*60);
+            rockL[i].anchor.set(1.0, 1.0);
+
+            rockR[i].x = 790 - i*60*1.2;
+            rockR[i].y = 400 - i*60*1.5;
+            rockR[i].scale.x *= 0.993**(i*60);
+            rockR[i].scale.y *= 0.993**(i*60);
+            rockR[i].anchor.set(0.0, 1.0);
+        }
+
+        var w = app.renderer.width;
+        bank[0].anchor.set(0.5, 0.5);
+        bank[1].anchor.set(0.5, 0.5);
+        bank[2].anchor.set(0.5, 0.5);
+        bank[0].x = w/2-180*0.6;
+        bank[0].y = 140;
+        bank[1].x = w/2;
+        bank[1].y = 130;
+        bank[2].x = w/2+180*0.6;
+        bank[2].y = 140;
+        bank[0].scale.x *= 0.6;
+        bank[1].scale.x *= 0.6;
+        bank[2].scale.x *= 0.6;
+        bank[0].scale.y *= 0.6;
+        bank[1].scale.y *= 0.6;
+        bank[2].scale.y *= 0.6;
+
+        bank[0].interactive = true;
+        bank[1].interactive = true;
+        bank[2].interactive = true;
+        bank[0].buttonMode = true;
+        bank[1].buttonMode = true;
+        bank[2].buttonMode = true;
+        bank[0].on('click', onBankClick0);
+        bank[1].on('click', onBankClick1);
+        bank[2].on('click', onBankClick2);
+
+        roadEdgeL.x = 0;
+        roadEdgeL.y = 140;
+
+        roadEdgeR.x = 570;
+        roadEdgeR.y = 140;
+
+        roadEdgeL.animationSpeed = 0.05;
+        roadEdgeR.animationSpeed = 0.05;
+        roadEdgeL.stop();
+        roadEdgeR.stop();
+
+        pillar.x = -10;
+        pillar.y = 0;
+
+        mirror.x = 320;
+        mirror.y = -20;
+
+        dashboard.x = -10;
+        dashboard.y = 420;
+
+        handle.x = 290;
+        handle.y = 440;
+
+        voiceMark.x = 250;
+        voiceMark.y = 450;
+        voiceMark.visible = false;
+
+        startBtn.x = app.renderer.width/2;
+        startBtn.y = app.renderer.height/2;
+        startBtn.anchor.set(0.5, 0.5);
+        startBtn.interactive = true;
+        startBtn.buttonMode = true;
+        startBtn.on('click', onStartButtonClick);
+
+        pickel.x = app.renderer.width / 2;
+        pickel.y = app.renderer.height / 2;
+        /*
+        pickel.interactive = true;
+        pickel.buttonMode = true;
+        pickel.on('pointerdown', onPickelClick);
+        */
+        pickel.anchor.set(0.1, 0.6);
+        pickel.visible = false;
+    }
+
+    //雲の位置更新
+    function updateCloud() {
+        cloudTile.tilePosition.x += 0.08;
+    }
+
+    //ピッケルの更新
+    function updatePickel(m) {
+        pickel.x = m.x;
+        pickel.y = m.y;
+    }
+
+    //岩の更新
+    function updateRock() {
+        for(var i=0; i<3; i+=1) {
+            rockL[i].x -= 1.3;
+            rockL[i].y += 1.5;
+            rockL[i].scale.x *= 1.008;
+            rockL[i].scale.y *= 1.008;
+            if (rockL[i].y > 400) {
+                rockL[i].x = 200;
+                rockL[i].y = 150;
+                rockL[i].scale.x = 0.3;
+                rockL[i].scale.y = 0.3;
+            } 
+
+            rockR[i].x += 1.3;
+            rockR[i].y += 1.5;
+            rockR[i].scale.x *= 1.008;
+            rockR[i].scale.y *= 1.008;
+            if (rockR[i].y > 400) {
+                rockR[i].x = 600;
+                rockR[i].y = 150;
+                rockR[i].scale.x = 0.3;
+                rockR[i].scale.y = 0.3;
+            } 
+        }
+    }
+
+    //盛土の更新
+    function updateBank() {
+        bank[0].y += 1.5;
+        bank[0].x -= 0.7;
+        bank[2].y += 1.5;
+        bank[2].x += 0.7;
+        bank[1].y += 1.5;
+
+        bank[2].scale.x *= 1.005; 
+        bank[2].scale.y *= 1.005; 
+        bank[0].scale.x *= 1.005; 
+        bank[0].scale.y *= 1.005; 
+        bank[1].scale.x *= 1.005; 
+        bank[1].scale.y *= 1.005; 
+        
+        if (bank[1].y > 400) {
+            var w = app.renderer.width;
+            bank[0].x = w/2-180*0.6;
+            bank[0].y = 140;
+            bank[1].x = w/2;
+            bank[1].y = 130;
+            bank[2].x = w/2+180*0.6;
+            bank[2].y = 140;
+            bank[0].scale.x = 0.6;
+            bank[1].scale.x = 0.6;
+            bank[2].scale.x = 0.6;
+            bank[0].scale.y = 0.6;
+            bank[1].scale.y = 0.6;
+            bank[2].scale.y = 0.6;
+        }
+    }
+
+    //アプリの状態制御
+    function updateStatus() {
+        //console.log(clickStatus + "," + navStatus + "," + appStatus);
+        if (bank[0].y > 300 &&  bank[0].y < 320 &&
+            clickStatus === "NOT_CLICKED" &&
+            navStatus === "NOT_NAVIGATED") {
+            appStatus = "NAVIGATION";
+            roadEdgeL.stop();
+            roadEdgeR.stop();
+        }
+
+        if (bank[0].y > 400) {
+            clickStatus = "NOT_CLICKED";
+            navStatus = "NOT_NAVIGATED";
+        } 
+    }
+
+    //ASEによるナビゲーション
+    function updateNavigation() {
+        if (navCounter > 60) {
+            navCounter = 0;
+            appStatus = "SELECT";
+            navStatus = "NAVIGATED";
+            voiceMark.visible = false;
+        } else {
+            if ((navCounter < 0 && navCounter <= 5) ||
+                (navCounter < 10 && navCounter <= 15) ||
+                (navCounter < 20 && navCounter <= 25) ||
+                (navCounter < 30 && navCounter <= 35) ||
+                (navCounter < 40 && navCounter <= 45) ||
+                (navCounter < 50 && navCounter <= 55) ) {
+                    voiceMark.visible = true;
+                    console.log(navCounter + " : true");
+                } else {
+                    voiceMark.visible = false;
+                    console.log(navCounter + " : false");
+                }
+        }
+        navCounter += 1;
+        console.log(navCounter);
+    }
+
+
+    //ピッケルをマウスクリックしたとき
+    function onPickelClick() {
+        pickel.anchor.set(0.5, 1.0);
+        pickel.rotation += 1.0;
+    }
+
+    //盛土0をクリックしたとき
+    function onBankClick0() {
+        if (appStatus !== "SELECT") {return;}
+        clickStatus = "CLICKED";
+        console.log("clicked:0");
+        appStatus = "GO";
+        roadEdgeL.play();
+        roadEdgeR.play();
+    }
+
+    //盛土1をクリックしたとき
+    function onBankClick1() {
+        if (appStatus !== "SELECT") {return;}
+        clickStatus = "CLICKED";
+        console.log("clicked:1");
+        appStatus = "GO";
+        roadEdgeL.play();
+        roadEdgeR.play();
+    }
+
+    //盛土2をクリックしたとき
+    function onBankClick2() {
+        if (appStatus !== "SELECT") {return;}
+        clickStatus = "CLICKED";
+        console.log("clicked:2");
+        appStatus = "GO";
+        roadEdgeL.play();
+        roadEdgeR.play();
+    }
+
+    //スタートボタンクリック
+    function onStartButtonClick() {
+        startBtn.visible = false;
+        pickel.visible = true;
+        appStatus = "GO";
+        roadEdgeL.play();
+        roadEdgeR.play();
+    }
+
+    app.start();
+}());
+
